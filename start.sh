@@ -10,6 +10,27 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $MAIN_LOG
 }
 
+# Function to check if port is available
+check_port() {
+    local port=$1
+    local service=$2
+    local max_attempts=30
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if netstat -tuln | grep ":$port " > /dev/null; then
+            log_message "✓ $service started successfully on port $port"
+            return 0
+        fi
+        log_message "Waiting for $service to start (attempt $attempt/$max_attempts)..."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    log_message "✗ Failed to verify $service on port $port after $max_attempts attempts"
+    return 1
+}
+
 # Start services
 start_services() {
     log_message "Starting services..."
@@ -35,19 +56,15 @@ start_jupyter() {
     cd /workspace
     jupyter lab --allow-root --no-browser --port=7888 --ip=0.0.0.0 \
         --ServerApp.token='' --ServerApp.password='' \
-        --ServerApp.allow_origin=* > "$JUPYTER_LOG" 2>&1 &
+        --ServerApp.allow_origin='*' > "$JUPYTER_LOG" 2>&1 &
     
-    sleep 5
-    if netstat -tuln | grep :7888 > /dev/null; then
-        log_message "✓ Jupyter Lab started"
-    fi
+    check_port 7888 "Jupyter Lab"
 }
 
 # Setup and start SwarmUI
 setup_swarmui() {
     cd /workspace
     
-    # Handle existing SwarmUI installation
     if [ -d "SwarmUI" ]; then
         log_message "Found existing SwarmUI installation, updating..."
         cd SwarmUI
@@ -60,27 +77,31 @@ setup_swarmui() {
         chmod -R 755 .
     fi
 
+    # Build SwarmUI
+    log_message "Building SwarmUI..."
+    cd src
+    dotnet build -c Release
+    cd ..
+
     # Handle ComfyUI backend if present
     if [ -f "dlbackend/ComfyUI/requirements.txt" ]; then
         log_message "Installing ComfyUI requirements..."
-        rm -rf dlbackend/ComfyUI/venv/
-        pip install -r dlbackend/ComfyUI/requirements.txt
+        cd dlbackend/ComfyUI
+        pip install -r requirements.txt
+        cd ../..
     fi
 
-    # Launch SwarmUI with explicit host binding
+    # Launch SwarmUI with debug output
+    log_message "Launching SwarmUI..."
     chmod +x launch-linux.sh
-    ./launch-linux.sh --launch_mode none --no-browser --port 7801 --host 0.0.0.0 2>&1 | tee -a "$MAIN_LOG" &
+    ./launch-linux.sh --launch_mode none --no-browser --port 7801 --host 0.0.0.0 --debug 2>&1 | tee -a "$MAIN_LOG" &
     
-    # Check port binding
-    sleep 10
-    if netstat -tuln | grep :7801 > /dev/null; then
-        log_message "✓ SwarmUI started on port 7801"
-        return 0
-    else
-        log_message "✗ ERROR: SwarmUI failed to start"
-        return 1
-    fi
+    # Wait for SwarmUI to start
+    check_port 7801 "SwarmUI"
 }
+
+# Trap SIGTERM and SIGINT
+trap 'kill $(jobs -p)' SIGTERM SIGINT
 
 # Main execution
 log_message "Starting initialization..."
@@ -88,5 +109,6 @@ start_services
 setup_dotnet
 start_jupyter
 setup_swarmui
+
 log_message "Setup complete, tailing logs..."
 tail -f "$MAIN_LOG" "$JUPYTER_LOG"
