@@ -1,6 +1,6 @@
 # RAF RunPod PyTorch Template
-# Version: v0.3
-# Image: rafrafraf/rnpd-pytorch240:v0.3
+# Version: v0.3-dev3
+# Image: rafrafraf/rnpd-pytorch240:v0.3-dev3
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
 # Environment variables
@@ -8,6 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     JUPYTER_PORT=8888 \
     RCLONE_CONFIG_PATH=/root/.config/rclone/rclone.conf \
+    RCLONE_CONF_URL="https://www.dropbox.com/scl/fi/n369g4tty5wg7ngh3ha0r/rclone.conf?rlkey=nw39ft02zs6kokmtu3uuc4527&st=67nc2vqg&dl=1" \
     SSH_PORT=22
 
 # System dependencies with better organization and cleanup
@@ -29,12 +30,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config \
     && ssh-keygen -A \
     # Directory setup
-    && mkdir -p /workspace/.config/rclone \
+    && mkdir -p /workspace \
+    && mkdir -p /root/.config/rclone \
     && mkdir -p /root/.huggingface \
     && mkdir -p /root/.jupyter \
     && mkdir -p /etc/ssh \
-    && touch /workspace/jupyter.log \
-    && chmod 777 /workspace/jupyter.log \
+    && chmod 777 /workspace \
     # Cron setup
     && touch /var/log/cron.log \
     && chmod 0644 /var/log/cron.log
@@ -60,15 +61,6 @@ RUN pip install --no-cache-dir \
     transformers==4.36.* \
     wandb==0.16.* \
     huggingface_hub==0.20.*
-
-# Create common ML directories
-RUN mkdir -p /workspace/data \
-    && mkdir -p /workspace/models \
-    && mkdir -p /workspace/notebooks \
-    && mkdir -p /workspace/scripts \
-    && mkdir -p /workspace/logs \
-    && mkdir -p /workspace/outputs \
-    && chmod -R 777 /workspace
 
 # Copy startup script
 COPY start.sh /

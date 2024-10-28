@@ -1,6 +1,6 @@
 #!/bin/bash
 # RAF RunPod PyTorch Template
-# Version: v0.3
+# Version: v0.3-dev3
 # Date: 2024-10-28
 
 # Enable error handling
@@ -35,6 +35,59 @@ verify_service() {
     return 0
 }
 
+# Function to setup rclone with validation
+setup_rclone() {
+    log_message "Setting up rclone..."
+    
+    # First check if config already exists in workspace
+    if [ ! -f "/workspace/rclone.conf" ]; then
+        log_message "No existing rclone.conf found in workspace, attempting to download..."
+        
+        if [[ -n "${RCLONE_CONF_URL:-}" ]]; then
+            log_message "Downloading rclone.conf from Dropbox..."
+            # -L follows redirects, -f fails silently, -S shows error
+            curl -L -f -S "${RCLONE_CONF_URL}" -o /workspace/rclone.conf || {
+                log_message "Failed to download rclone.conf"
+                return 1
+            }
+            
+            # Verify file was downloaded and is not empty
+            if [ -s /workspace/rclone.conf ]; then
+                log_message "Successfully downloaded rclone.conf"
+                chmod 600 /workspace/rclone.conf
+            else
+                log_message "Downloaded file is empty or missing"
+                return 1
+            fi
+        fi
+    else
+        log_message "Existing rclone.conf found in workspace"
+    fi
+
+    # Proceed with configuration if file exists
+    if [ -f "/workspace/rclone.conf" ]; then
+        log_message "Copying rclone config to ~/.config/rclone/"
+        mkdir -p ~/.config/rclone
+        cp /workspace/rclone.conf "$RCLONE_CONFIG_PATH"
+        chmod 600 "$RCLONE_CONFIG_PATH"
+
+        if rclone config show &>/dev/null; then
+            log_message "Rclone configuration validated successfully"
+            # Test Dropbox connection
+            if rclone lsd dbx: &>/dev/null; then
+                log_message "Successfully connected to Dropbox"
+            else
+                log_message "Warning: Could not connect to Dropbox"
+            fi
+        else
+            log_message "Warning: Invalid rclone configuration"
+            return 1
+        fi
+    else
+        log_message "No rclone configuration available"
+    fi
+}
+
 # Ensure required directories exist
 mkdir -p /var/run/sshd
 mkdir -p /root/.ssh
@@ -65,30 +118,6 @@ if [[ -n "${WANDB_API_KEY:-}" ]]; then
     log_message "Setting up Weights & Biases token..."
     export WANDB_API_KEY=$WANDB_API_KEY
 fi
-
-# Enhanced rclone setup with validation
-setup_rclone() {
-    log_message "Setting up rclone..."
-    
-    if [[ -n "${RCLONE_CONFIG:-}" ]]; then
-        echo "$RCLONE_CONFIG" > "$RCLONE_CONFIG_PATH"
-        chmod 600 "$RCLONE_CONFIG_PATH"
-    elif [[ -n "${RCLONE_CONFIG_BASE64:-}" ]]; then
-        echo "$RCLONE_CONFIG_BASE64" | base64 -d > "$RCLONE_CONFIG_PATH"
-        chmod 600 "$RCLONE_CONFIG_PATH"
-    fi
-
-    if [[ -f "$RCLONE_CONFIG_PATH" ]]; then
-        if rclone config show &>/dev/null; then
-            log_message "Rclone configuration validated successfully"
-        else
-            log_message "Warning: Invalid rclone configuration"
-            return 1
-        fi
-    else
-        log_message "No rclone configuration provided"
-    fi
-}
 
 # Setup rclone
 setup_rclone
