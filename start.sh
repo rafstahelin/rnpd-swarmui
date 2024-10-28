@@ -1,6 +1,6 @@
 #!/bin/bash
 # RAF RunPod PyTorch Template
-# Version: v0.2
+# Version: v0.3
 # Date: 2024-10-28
 
 # Enable error handling
@@ -50,6 +50,7 @@ fi
 # Start services with retry
 verify_service "SSH" "service ssh start"
 verify_service "Nginx" "service nginx start"
+verify_service "Cron" "service cron start"
 
 # Setup tokens with proper permissions
 if [[ -n "${HF_TOKEN:-}" ]]; then
@@ -65,12 +66,32 @@ if [[ -n "${WANDB_API_KEY:-}" ]]; then
     export WANDB_API_KEY=$WANDB_API_KEY
 fi
 
-# Setup rclone
-if [[ -n "${RCLONE_CONFIG:-}" ]]; then
+# Enhanced rclone setup with validation
+setup_rclone() {
     log_message "Setting up rclone..."
-    echo "$RCLONE_CONFIG" > "$RCLONE_CONFIG_PATH"
-    chmod 600 "$RCLONE_CONFIG_PATH"
-fi
+    
+    if [[ -n "${RCLONE_CONFIG:-}" ]]; then
+        echo "$RCLONE_CONFIG" > "$RCLONE_CONFIG_PATH"
+        chmod 600 "$RCLONE_CONFIG_PATH"
+    elif [[ -n "${RCLONE_CONFIG_BASE64:-}" ]]; then
+        echo "$RCLONE_CONFIG_BASE64" | base64 -d > "$RCLONE_CONFIG_PATH"
+        chmod 600 "$RCLONE_CONFIG_PATH"
+    fi
+
+    if [[ -f "$RCLONE_CONFIG_PATH" ]]; then
+        if rclone config show &>/dev/null; then
+            log_message "Rclone configuration validated successfully"
+        else
+            log_message "Warning: Invalid rclone configuration"
+            return 1
+        fi
+    else
+        log_message "No rclone configuration provided"
+    fi
+}
+
+# Setup rclone
+setup_rclone
 
 # Print system information
 log_message "=== System Information ==="
@@ -81,16 +102,27 @@ log_message "Python: $(python --version)"
 log_message "PyTorch: $(python -c 'import torch; print(torch.__version__)')"
 log_message "CUDA: $(nvidia-smi | grep "CUDA Version:" | awk '{print $9}' 2>/dev/null || echo 'No CUDA found')"
 
-# Start Jupyter Lab
+# Start Jupyter Lab with improved configuration
 log_message "Starting Jupyter Lab..."
 cd /workspace
-jupyter lab --allow-root --no-browser --port=8888 --ip=0.0.0.0 \
-    --ServerApp.token='' \
-    --ServerApp.password='' \
-    --ServerApp.allow_origin=* \
-    --ServerApp.root_dir=/workspace \
-    --ServerApp.terminado_settings='{"shell_command": ["/bin/bash"]}' \
-    >> /workspace/jupyter.log 2>&1 &
+
+# Create Jupyter config if it doesn't exist
+jupyter lab --generate-config
+
+# Configure Jupyter
+cat << EOF >> /root/.jupyter/jupyter_lab_config.py
+c.ServerApp.allow_root = True
+c.ServerApp.ip = '0.0.0.0'
+c.ServerApp.port = 8888
+c.ServerApp.token = ''
+c.ServerApp.password = ''
+c.ServerApp.allow_origin = '*'
+c.ServerApp.root_dir = '/workspace'
+c.ServerApp.terminado_settings = {'shell_command': ['/bin/bash']}
+EOF
+
+# Start Jupyter Lab
+jupyter lab >> /workspace/jupyter.log 2>&1 &
 
 # Verify Jupyter is running
 timeout=30

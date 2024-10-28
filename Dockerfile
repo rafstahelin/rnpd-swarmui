@@ -1,6 +1,6 @@
 # RAF RunPod PyTorch Template
-# Version: v0.2
-# Image: rafrafraf/rnpd-pytorch240:v0.2
+# Version: v0.3
+# Image: rafrafraf/rnpd-pytorch240:v0.3
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
 # Environment variables
@@ -10,34 +10,36 @@ ENV DEBIAN_FRONTEND=noninteractive \
     RCLONE_CONFIG_PATH=/root/.config/rclone/rclone.conf \
     SSH_PORT=22
 
-# System dependencies
-RUN apt-get update && apt-get install -y \
+# System dependencies with better organization and cleanup
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     openssh-server \
     unzip \
     curl \
     git \
+    cron \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# SSH setup
-RUN mkdir -p /var/run/sshd \
+    && rm -rf /var/lib/apt/lists/* \
+    # SSH setup
+    && mkdir -p /var/run/sshd \
     && mkdir -p /root/.ssh \
     && chmod 700 /root/.ssh \
     && echo 'root:runpod' | chpasswd \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config \
-    && ssh-keygen -A
-
-# Directory setup
-RUN mkdir -p /workspace/.config/rclone \
+    && ssh-keygen -A \
+    # Directory setup
+    && mkdir -p /workspace/.config/rclone \
     && mkdir -p /root/.huggingface \
     && mkdir -p /root/.jupyter \
     && mkdir -p /etc/ssh \
     && touch /workspace/jupyter.log \
-    && chmod 777 /workspace/jupyter.log
+    && chmod 777 /workspace/jupyter.log \
+    # Cron setup
+    && touch /var/log/cron.log \
+    && chmod 0644 /var/log/cron.log
 
-# Install rclone
+# Install rclone with version pinning
 RUN curl -O https://downloads.rclone.org/v1.65.0/rclone-v1.65.0-linux-amd64.zip \
     && unzip rclone-v1.65.0-linux-amd64.zip \
     && cd rclone-v1.65.0-linux-amd64 \
@@ -46,24 +48,18 @@ RUN curl -O https://downloads.rclone.org/v1.65.0/rclone-v1.65.0-linux-amd64.zip 
     && cd .. \
     && rm -rf rclone-v1.65.0-linux-amd64*
 
-# Install Python packages
+# Install minimal Python packages with version pinning
 RUN pip install --no-cache-dir \
     jupyterlab==4.1.* \
-    wandb==0.16.* \
-    huggingface_hub==0.20.* \
     notebook==7.1.* \
     ipywidgets==8.1.* \
+    ipython==8.12.* \
     numpy==1.26.* \
     pandas==2.2.* \
     matplotlib==3.8.* \
-    seaborn==0.13.* \
-    scikit-learn==1.4.* \
-    tqdm==4.66.* \
     transformers==4.36.* \
-    datasets==2.16.* \
-    black==24.1.* \
-    pylint==3.0.* \
-    ipython==8.12.*
+    wandb==0.16.* \
+    huggingface_hub==0.20.*
 
 # Create common ML directories
 RUN mkdir -p /workspace/data \
