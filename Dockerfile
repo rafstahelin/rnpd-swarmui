@@ -7,12 +7,11 @@ FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     JUPYTER_PORT=8888 \
-    JUPYTER_TOKEN=runpod \
     RCLONE_CONFIG_PATH=/root/.config/rclone/rclone.conf \
     RCLONE_CONF_URL="https://www.dropbox.com/scl/fi/n369g4tty5wg7ngh3ha0r/rclone.conf?rlkey=nw39ft02zs6kokmtu3uuc4527&st=67nc2vqg&dl=1" \
     SSH_PORT=22
 
-# System dependencies with better organization and cleanup
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     openssh-server \
@@ -41,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && touch /var/log/cron.log \
     && chmod 0644 /var/log/cron.log
 
-# Install rclone with version pinning
+# Install rclone
 RUN curl -O https://downloads.rclone.org/v1.65.0/rclone-v1.65.0-linux-amd64.zip \
     && unzip rclone-v1.65.0-linux-amd64.zip \
     && cd rclone-v1.65.0-linux-amd64 \
@@ -50,7 +49,7 @@ RUN curl -O https://downloads.rclone.org/v1.65.0/rclone-v1.65.0-linux-amd64.zip 
     && cd .. \
     && rm -rf rclone-v1.65.0-linux-amd64*
 
-# Install minimal Python packages with version pinning
+# Install Python packages
 RUN pip install --no-cache-dir \
     jupyterlab==4.1.* \
     notebook==7.1.* \
