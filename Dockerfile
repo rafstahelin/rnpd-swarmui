@@ -1,21 +1,13 @@
 # RAF RunPod PyTorch Template
-<<<<<<< HEAD
 # Version: v0.4
 # Image: rafrafraf/rnpd-pytorch240:v0.4
-=======
-# Version: v0.3-dev3
-# Image: rafrafraf/rnpd-pytorch240:v0.3-dev3
->>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
 # Environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     JUPYTER_PORT=8888 \
-<<<<<<< HEAD
     JUPYTER_TOKEN=runpod \
-=======
->>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
     RCLONE_CONFIG_PATH=/root/.config/rclone/rclone.conf \
     RCLONE_CONF_URL="https://www.dropbox.com/scl/fi/n369g4tty5wg7ngh3ha0r/rclone.conf?rlkey=nw39ft02zs6kokmtu3uuc4527&st=67nc2vqg&dl=1" \
     SSH_PORT=22
@@ -86,8 +78,4 @@ EXPOSE 8888 22
 WORKDIR /workspace
 
 # Entry point
-<<<<<<< HEAD
 ENTRYPOINT ["/bin/bash", "/start.sh"]
-=======
-ENTRYPOINT ["/bin/bash", "/start.sh"]
->>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
