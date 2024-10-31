@@ -1,6 +1,10 @@
 #!/bin/bash
 # RAF RunPod PyTorch Template
+<<<<<<< HEAD
 # Version: v0.4
+=======
+# Version: v0.3-dev3
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 # Date: 2024-10-28
 
 # Enable error handling
@@ -39,6 +43,7 @@ verify_service() {
 setup_rclone() {
     log_message "Setting up rclone..."
     
+<<<<<<< HEAD
     # Check current version
     CURRENT_VERSION=$(rclone --version | head -n1)
     log_message "Current rclone version: $CURRENT_VERSION"
@@ -73,12 +78,18 @@ setup_rclone() {
     log_message "Rclone version after update attempt: $NEW_VERSION"
     
     # Continue with
+=======
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
     # First check if config already exists in workspace
     if [ ! -f "/workspace/rclone.conf" ]; then
         log_message "No existing rclone.conf found in workspace, attempting to download..."
         
         if [[ -n "${RCLONE_CONF_URL:-}" ]]; then
             log_message "Downloading rclone.conf from Dropbox..."
+<<<<<<< HEAD
+=======
+            # -L follows redirects, -f fails silently, -S shows error
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
             curl -L -f -S "${RCLONE_CONF_URL}" -o /workspace/rclone.conf || {
                 log_message "Failed to download rclone.conf"
                 return 1
@@ -138,19 +149,33 @@ verify_service "SSH" "service ssh start"
 verify_service "Nginx" "service nginx start"
 verify_service "Cron" "service cron start"
 
+<<<<<<< HEAD
 # Setup tokens with proper cleaning
 if [[ -n "${HF_TOKEN:-}" ]]; then
     log_message "Setting up HuggingFace token..."
     cleaned_token=$(echo "$HF_TOKEN" | sed 's/^=//g' | tr -d '[:space:]')
     echo "$cleaned_token" > /root/.huggingface/token
     export HF_TOKEN="$cleaned_token"
+=======
+# Setup tokens with proper permissions
+if [[ -n "${HF_TOKEN:-}" ]]; then
+    log_message "Setting up HuggingFace token..."
+    mkdir -p /root/.huggingface
+    echo "$HF_TOKEN" > /root/.huggingface/token
+    chmod 600 /root/.huggingface/token
+    export HUGGINGFACE_TOKEN=$HF_TOKEN
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 fi
 
 if [[ -n "${WANDB_API_KEY:-}" ]]; then
     log_message "Setting up Weights & Biases token..."
+<<<<<<< HEAD
     # Remove any leading '=' and trim whitespace
     cleaned_key=$(echo "$WANDB_API_KEY" | sed 's/^=//g' | tr -d '[:space:]')
     export WANDB_API_KEY="$cleaned_key"
+=======
+    export WANDB_API_KEY=$WANDB_API_KEY
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 fi
 
 # Setup rclone
@@ -172,12 +197,20 @@ cd /workspace
 # Create Jupyter config if it doesn't exist
 jupyter lab --generate-config
 
+<<<<<<< HEAD
 # Configure Jupyter with token authentication
+=======
+# Configure Jupyter
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 cat << EOF >> /root/.jupyter/jupyter_lab_config.py
 c.ServerApp.allow_root = True
 c.ServerApp.ip = '0.0.0.0'
 c.ServerApp.port = 8888
+<<<<<<< HEAD
 c.ServerApp.token = '${JUPYTER_TOKEN:-runpod}'
+=======
+c.ServerApp.token = ''
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
 c.ServerApp.password = ''
 c.ServerApp.allow_origin = '*'
 c.ServerApp.root_dir = '/workspace'
@@ -198,5 +231,9 @@ while ! curl -s http://localhost:8888/api >/dev/null; do
 done
 
 log_message "Pod ready to use."
+<<<<<<< HEAD
 log_message "Jupyter Lab running with token: ${JUPYTER_TOKEN:-runpod}"
 tail -f /workspace/jupyter.log
+=======
+tail -f /workspace/jupyter.log
+>>>>>>> 876e196910bd9f86cc0d8586dccfc99e3feaddfe
