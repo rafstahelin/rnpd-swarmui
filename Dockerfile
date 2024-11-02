@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     openssh-server \
     unzip \
+    rsync \
+    jq \
     curl \
     git \
     cron \
@@ -60,7 +62,8 @@ RUN pip install --no-cache-dir \
     matplotlib==3.8.* \
     transformers==4.36.* \
     wandb==0.16.* \
-    huggingface_hub==0.20.*
+    huggingface_hub==0.20.* \
+    rich==13.7.*
 
 # Copy startup script
 COPY start.sh /
