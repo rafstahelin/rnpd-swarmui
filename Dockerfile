@@ -1,6 +1,11 @@
 # RAF RunPod PyTorch Template
+<<<<<<< HEAD
 # Version: v1.1.0-dev-tools
 # Image: rafrafraf/rnpd-pytorch240:v1.1.0-dev-tools
+=======
+# Version: v0.4
+# Image: rafrafraf/rnpd-pytorch240:v0.4
+>>>>>>> 69853f6b2c3c4fdfaa01d9cd622617c10d26d6d2
 FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
 
 # Environment variables
@@ -63,8 +68,12 @@ RUN pip install --no-cache-dir \
     transformers==4.36.* \
     wandb==0.16.* \
     huggingface_hub==0.20.* \
+<<<<<<< HEAD
     rich==13.7.* \
     python-dotenv==1.0.*
+=======
+    rich==13.7.*
+>>>>>>> 69853f6b2c3c4fdfaa01d9cd622617c10d26d6d2
 
 # Copy startup script
 COPY start.sh /
@@ -81,4 +90,8 @@ EXPOSE 8888 22
 WORKDIR /workspace
 
 # Entry point
+<<<<<<< HEAD
 ENTRYPOINT ["/bin/bash", "/start.sh"]
+=======
+ENTRYPOINT ["/bin/bash", "/start.sh"]
+>>>>>>> 69853f6b2c3c4fdfaa01d9cd622617c10d26d6d2
